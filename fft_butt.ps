@@ -1,0 +1,130 @@
+%!PS
+%%BoundingBox: 0 0 350 250
+
+/bd{bind def}bind def
+/ed{exch def}bd
+
+/circ{
+	3 0 360 arc closepath
+	gsave 0 0 0 0 setcmykcolor fill grestore
+	stroke
+}bd
+
+/arrow{
+	6 dict begin
+	/y1 ed /x1 ed
+	/y0 ed /x0 ed
+	/ang y1 y0 sub x1 x0 sub atan def
+	gsave
+	x0 y0 translate
+	ang rotate
+	0 0 moveto
+	x1 x0 sub dup mul y1 y0 sub dup mul add sqrt
+	1.5 sub
+	dup 5 sub 0 lineto stroke
+	0 translate
+	0 0 moveto
+	-10 3 lineto
+	-10 -3 lineto
+	closepath fill
+	grestore
+	end
+}bd
+
+/butterfly{
+	0 50 moveto
+	50 50 lineto stroke
+	50 50 100 50 arrow
+	100 50 moveto 150 50 lineto
+
+	% the bottom edge is negative
+	0 0 moveto
+	50 0 lineto stroke
+	gsave [3] 0 setdash
+	50 0 100 0 arrow
+	grestore
+	100 0 moveto
+	150 0 lineto
+
+	50 50 100 0 arrow
+	50 0 100 50 arrow
+	stroke
+	50 50 circ
+	50 0 circ
+	100 50 circ
+	100 0 circ
+}bind def
+
+/Var{
+	ti setfont
+	show
+}bind def
+
+/var{
+	tis setfont
+	0 -5 rmoveto
+	show
+}bd
+
+/sup{
+	tis setfont
+	0 5 rmoveto
+	show
+}bd
+
+/Times-Italic findfont dup /ti exch 25 scalefont def
+10 scalefont /tis exch def
+ti setfont
+
+50 50 translate
+
+gsave
+butterfly
+-20 0 moveto (f) Var (3) var
+-20 50 moveto (f) Var (1) var
+130 10 moveto (a) Var (3) var
+130 60 moveto (a) Var (2) var
+0 100 translate
+butterfly
+-20 0 moveto (f) Var (2) var
+-20 50 moveto (f) Var (0) var
+130 10 moveto (a) Var (1) var
+130 60 moveto (a) Var (0) var
+grestore
+
+100 10 moveto (w) Var (1) sup
+100 60 moveto (w) Var (0) sup
+
+150 0 translate
+
+gsave [3] 0 setdash
+0 0 50 0 arrow
+0 50 50 50 arrow
+grestore
+0 100 50 100 arrow
+0 150 50 150 arrow
+
+0 0 50 100 arrow
+0 50 50 150 arrow
+0 100 50 0 arrow
+0 150 50 50 arrow stroke
+
+50 0 moveto 50 0 rlineto
+50 50 moveto 50 0 rlineto
+50 100 moveto 50 0 rlineto
+50 150 moveto 50 0 rlineto
+stroke
+
+0 0 circ 50 0 circ
+0 50 circ 50 50 circ
+0 100 circ 50 100 circ
+0 150 circ 50 150 circ
+
+100 150 moveto (C)Var (0)var
+100 100 moveto (C)Var (1)var
+100  50 moveto (C)Var (2)var
+100   0 moveto (C)Var (3)var
+
+showpage
+
+

@@ -1,0 +1,1013 @@
+\documentclass[10pt]{jarticle}
+\usepackage{amsmath}
+\usepackage[dvips]{graphicx,color}
+
+\setlength{\oddsidemargin}{15pt}
+\setlength{\evensidemargin}{15pt}
+\setlength{\textwidth}{40zw}
+
+\def\F{\mathcal{F}}
+
+% transpose
+\def\T{^{\mathrm T}}
+
+\begin{document}
+\title{高速フーリエ変換の基礎}
+%\author{東京大学 毛利研究室 修士一年 佐久田昌博}
+\author{?}
+\maketitle
+
+この文書のコピーは
+http://mohri1.t.u-tokyo.ac.jp/japanese/sakuta/fft.pdf
+にあります。
+
+\section{フーリエ級数展開}
+
+フーリエ級数展開
+\begin{align}
+f(t)&=\frac{a_0}{2}+\sum_{k=1}^{\infty}(a_k \cos \frac{2\pi}{T}kt + b_k \sin \frac{2\pi}{T}kt) \\
+a_k &= \frac{2}{T}\int_{-\pi}^{\pi} f(t) \cos \frac{2\pi}{T}kt\ dt & (k = 0,1,2,\cdots)\\
+b_k &= \frac{2}{T}\int_{-\pi}^{\pi} f(t) \sin \frac{2\pi}{T}kt\ dt & (k = 1,2,\cdots)
+\end{align}
+
+複素フーリエ級数展開
+\begin{align}
+f(t) &= \sum_{k=-\infty}^{\infty}C_k e^{j\omega_0 kt} \\
+C_k &= \frac{1}{T}\int_{-T/2}^{T/2}f(t) e^{-j\omega_0 kt} & (\omega_0 = 2\pi/T)
+\end{align}
+
+\section{フーリエ変換}
+
+複素フーリエ級数展開の区間を無限大に発散させることによって、フーリエ変換が得られる。
+ここで$F(\omega)$が一般には複素数になることに注意されたい。
+
+\begin{align}
+f(t) &= \frac{1}{2\pi}\int_{-\infty}^\infty F(\omega) e^{j\omega t} d\omega \\
+F(\omega) &= \int_{-\infty}^\infty f(t) e^{-j\omega t} dt
+\end{align}
+
+尚、係数の$1/2\pi$はここに示した通りの定義と違って、下段の式についている場合が
+参考文献によってはありうるが、どちらが正しいということはなく、使いやすい方を
+選べばよい。
+
+\section{離散フーリエ変換(DFT)}
+
+複素フーリエ級数展開を連続関数をサンプリングした有限の要素からなる空間同士の変換へと書き換えると、離散フーリエ変換が得られる。これは要素の細かさを極限にまで
+細かくすればフーリエ変換と同等である。
+
+\begin{align}
+f_i &= \sum_{k=0}^{N-1} C_k e^{j(2\pi/N)ki} & (i=0,1,2,\cdots, N-1) \\
+C_k &= \frac{1}{N} \sum_{i=0}^{N-1} f_i e^{-j(2\pi/N)ki} & (k=0,1,2,\cdots,N-1)
+\end{align}
+
+\section{高速フーリエ変換(FFT)}
+
+高速フーリエ変換は、離散フーリエ変換を高速に行うアルゴリズムの一種である。
+DFTでは指数関数と$f_i$の積が$O(N^2)$で現れてくるため、$N$が大きくなると
+非常に計算に時間がかかるようになる。
+これに対し、以下に述べるFFTでは積を取る回数が$O(N \log N)$になる。
+これは$N$が大きい時には遥かにDFTよりも計算回数が少なくて済むということである。
+
+FFTには他に、サンプル数が2のべき乗でなければならないという特徴がある。
+
+以下では、簡単な具体例からFFTがどのようなアルゴリズムであるかを述べる。
+
+例えば、4サンプルのDFTにおいて、$e^{-j(2\pi/N)i}=w^i$とおいて、$C_k$への
+変換を行列で表すと
+
+\begin{equation}
+\begin{pmatrix}
+C_0 \\
+C_1 \\
+C_2 \\
+C_3
+\end{pmatrix}
+=
+\begin{pmatrix}
+w^0 & w^0 & w^0 & w^0 \\
+w^0 & w^1 & w^2 & w^3 \\
+w^0 & w^2 & w^4 & w^6 \\
+w^0 & w^3 & w^6 & w^9
+\end{pmatrix}
+\begin{pmatrix}
+f_0 \\ f_1 \\ f_2 \\ f_3
+\end{pmatrix}
+\end{equation}
+
+となる。ここで積を偶数と奇数に分けてみると
+
+\begin{equation}
+\begin{pmatrix}
+C_0 \\
+C_1 \\
+C_2 \\
+C_3
+\end{pmatrix}
+=
+\begin{pmatrix}
+w^0 & w^0 \\
+w^0 & w^2 \\
+w^0 & w^4 \\
+w^0 & w^6
+\end{pmatrix}
+\begin{pmatrix}
+f_0 \\ f_2
+\end{pmatrix}
++
+\begin{pmatrix}
+w^0 & w^0 \\
+w^1 & w^3 \\
+w^2 & w^6 \\
+w^3 & w^9
+\end{pmatrix}
+\begin{pmatrix}
+f_1 \\ f_3
+\end{pmatrix}
+\end{equation}
+
+と書けることが分かる。
+
+ここで右辺の第２項の左に掛かっている$2\times 4$行列が
+
+\begin{equation}
+\begin{pmatrix}
+w^0 & w^0 \\
+w^1 & w^3 \\
+w^2 & w^6 \\
+w^3 & w^9
+\end{pmatrix}
+=
+\begin{pmatrix}
+w^0 w^0 & w^0 w^0 \\
+w^1 w^0 & w^1 w^2 \\
+w^2 w^0 & w^2 w^4 \\
+w^3 w^0 & w^3 w^6
+\end{pmatrix}
+=
+\begin{pmatrix}
+w^0 & 0 & 0 & 0 \\
+0 & w^1 & 0 & 0 \\
+0 & 0 & w^2 & 0 \\
+0 & 0 & 0 & w^3
+\end{pmatrix}
+\begin{pmatrix}
+w^0 & w^0 \\
+w^0 & w^2 \\
+w^0 & w^4 \\
+w^0 & w^6
+\end{pmatrix}
+\end{equation}
+
+と変形できることに注目すると次のように変形できる。
+
+\begin{align}
+\begin{pmatrix}
+C_0 \\
+C_1 \\
+C_2 \\
+C_3
+\end{pmatrix}
+&=
+\begin{pmatrix}
+w^0 & w^0 \\
+w^0 & w^2 \\
+w^0 & w^4 \\
+w^0 & w^6
+\end{pmatrix}
+\begin{pmatrix}
+f_0 \\ f_2
+\end{pmatrix}
++
+\begin{pmatrix}
+w^0 & 0 & 0 & 0 \\
+0 & w^1 & 0 & 0 \\
+0 & 0 & w^2 & 0 \\
+0 & 0 & 0 & w^3
+\end{pmatrix}
+\begin{pmatrix}
+w^0 & w^0 \\
+w^0 & w^2 \\
+w^0 & w^4 \\
+w^0 & w^6
+\end{pmatrix}
+\begin{pmatrix}
+f_1 \\ f_3
+\end{pmatrix}
+\end{align}
+
+さらに、$w^{k}=w^{4n+k} \  (n=整数)$の周期性を使いながら、
+式を2つに分解すると次のようになる。
+
+
+\begin{align}
+\begin{pmatrix}
+C_0 \\
+C_1
+\end{pmatrix}
+&=
+\begin{pmatrix}
+w^0 & w^0 \\
+w^0 & w^2 \\
+\end{pmatrix}
+\begin{pmatrix}
+f_0 \\ f_2
+\end{pmatrix}
++
+\begin{pmatrix}
+w^0 & 0 \\
+0 & w^1 \\
+\end{pmatrix}
+\begin{pmatrix}
+w^0 & w^0 \\
+w^0 & w^2 \\
+\end{pmatrix}
+\begin{pmatrix}
+f_1 \\ f_3
+\end{pmatrix}
+\label{eq:fft4-C0}
+\\
+\begin{pmatrix}
+C_2 \\
+C_3
+\end{pmatrix}
+&=
+\begin{pmatrix}
+w^0 & w^0 \\
+w^0 & w^2 \\
+\end{pmatrix}
+\begin{pmatrix}
+f_0 \\ f_2
+\end{pmatrix}
++
+w^2
+\begin{pmatrix}
+w^0 & 0 \\
+0 & w^1 \\
+\end{pmatrix}
+\begin{pmatrix}
+w^0 & w^0 \\
+w^0 & w^2 \\
+\end{pmatrix}
+\begin{pmatrix}
+f_1 \\ f_3
+\end{pmatrix}
+\label{eq:fft4-C2}
+\end{align}
+
+\eqref{eq:fft4-C0}と\eqref{eq:fft4-C2}に繰り返し現れている項を下記のように定義する。
+
+\begin{align*}
+\begin{pmatrix}
+a_0 \\ a_1
+\end{pmatrix}
+=
+\begin{pmatrix}
+w^0 & w^0 \\
+w^0 & w^2 \\
+\end{pmatrix}
+\begin{pmatrix}
+f_0 \\ f_2
+\end{pmatrix}
+,
+\begin{pmatrix}
+a_2 \\ a_3
+\end{pmatrix}
+=
+\begin{pmatrix}
+w^0 & 0 \\
+0 & w^1 \\
+\end{pmatrix}
+\begin{pmatrix}
+w^0 & w^0 \\
+w^0 & w^2 \\
+\end{pmatrix}
+\begin{pmatrix}
+f_1 \\ f_3
+\end{pmatrix}
+\end{align*}
+
+すると全体の解は下記のように表せる。
+
+\begin{align}
+\begin{pmatrix}
+C_0 \\
+C_1 \\
+C_2 \\
+C_3
+\end{pmatrix}
+&=
+\begin{pmatrix}
+a_0 + a_2 \\
+a_1 + a_3 \\
+a_0 - a_2 \\
+a_1 - a_3 \\
+\end{pmatrix}
+&
+\begin{cases}
+a_0 = f_0 + f_2 \\
+a_1 = f_0 - f_2 \\
+a_2 = f_1 + f_3 \\
+a_3 = w ( f_1 - f_3 ) \\
+\end{cases}
+\label{eq:fft4-a}
+\end{align}
+
+$w^0=0, w^2=-1$を代入しつつ\eqref{eq:fft4-a}を展開すると下記のようになるが、
+いきなり展開した形で計算をするのではなく、$a_i$の値を一度計算して
+メモリに残しておき、\eqref{eq:fft4-a}に代入することで、計算の回数を
+減らすことが出来る。
+
+\begin{align*}
+C_0 &= f_0+f_2+f_1+f_3 \\
+C_1 &= f_0-f_2+w(f_1-f_3) \\
+C_2 &= f_0+f_2-(f_1+f_3) \\
+C_3 &= f_0-f_2+w(f_1-f_3)
+\end{align*}
+
+
+これを図で表すと図\ref{but4}のようになる。
+点線は$-1$倍して足すことを示している。
+この計算は、その形からバタフライ演算と呼ばれている。
+
+素直にDFTを行った場合、4サンプルでは16回の乗算が必要
+になるが、このFFTでは4回で済んでいる。
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=20zw]{fft_butt.ps}
+\caption{バタフライ演算による4サンプルFFT}
+\label{but4}
+\end{figure}
+
+8サンプルの
+FFTにおいても同様に偶数と奇数のグループに分けると、
+二つの4サンプルFFTに帰着できる。
+さらに16サンプルの場合は8サンプルが二つ、というふうに、
+一段低いFFTによって次段のFFTが行われる。
+このため、FFTはプログラム手続きの再起呼び出しを使って
+実装されやすい。
+
+\section{8サンプルFFT}
+
+8サンプルDFTは$w=e^{-j(2\pi/N)}, N=8$を使って次のように書ける。
+
+\begin{align}
+\begin{pmatrix}
+C_0 \\
+C_1 \\
+C_2 \\
+C_3 \\
+C_4 \\
+C_5 \\
+C_6 \\
+C_7
+\end{pmatrix}
+&=
+\begin{pmatrix}
+w^0 & w^0 & w^0 & w^0 & w^0 & w^0 & w^0 & w^0 \\
+w^0 & w^1 & w^2 & w^3 & w^4 & w^5 & w^6 & w^7 \\
+w^0 & w^2 & w^4 & w^6 & w^8 & w^{10} & w^{12} & w^{14} \\
+w^0 & w^3 & w^6 & w^9 & w^{12} & w^{15} & w^{18} & w^{21} \\
+w^0 & w^4 & w^8 & w^{12} & w^{16} & w^{20} & w^{24} & w^{28} \\
+w^0 & w^5 & w^{10} & w^{15} & w^{20} & w^{25} & w^{30} & w^{35} \\
+w^0 & w^6 & w^{12} & w^{18} & w^{24} & w^{30} & w^{36} & w^{42} \\
+w^0 & w^7 & w^{14} & w^{21} & w^{28} & w^{35} & w^{42} & w^{49} \\
+\end{pmatrix}
+\begin{pmatrix}
+f_0 \\ f_1 \\ f_2 \\ f_3 \\ f_4 \\ f_5 \\ f_6 \\ f_7
+\end{pmatrix}
+\label{eq:dft8}
+\end{align}
+
+書くのが大変なので、行列$W_n$を定義する。$W_n$の$k$行$l$列要素は
+$(W_n)_{k,l}=w^{klN/n}$と定義される。これを使うと\eqref{eq:dft8}は
+
+\begin{align}
+\begin{pmatrix}
+C_0 \\ \vdots \\ C_7
+\end{pmatrix}
+&=
+W_8
+\begin{pmatrix}
+f_0 \\ \vdots \\ f_7
+\end{pmatrix}
+\end{align}
+
+と書ける。
+
+また、今後のために行列$A_n$も定義しておく。
+この要素は
+$(A_n)_{k,l}=w^k \delta_{kl}$
+と定義される対角行列である。
+
+まず、4サンプルFFTのときと同じように、偶数列と奇数列に項を分ける。
+すると、$A_n$を使って共通の行列をくくることができる。
+
+\begin{align}
+\begin{pmatrix}
+C_0 \\ \vdots \\ C_7
+\end{pmatrix}
+&=
+\begin{pmatrix}
+w^0 & w^0 & w^0 & w^0 \\
+w^0 & w^2 & w^4 & w^6 \\
+w^0 & w^4 & w^8 & w^{12} \\
+w^0 & w^6 & w^{12} & w^{18} \\
+w^0 & w^8 & w^{16} & w^{24} \\
+w^0 & w^{10} & w^{20} & w^{30} \\
+w^0 & w^{12} & w^{24} & w^{36} \\
+w^0 & w^{14} & w^{28} & w^{42}
+\end{pmatrix}
+\begin{pmatrix}
+f_0 \\ f_2 \\ f_4 \\ f_6
+\end{pmatrix}
++
+\begin{pmatrix}
+w^0 & w^0 & w^0 & w^0 \\
+w^1 & w^3 & w^5 & w^7 \\
+w^2 & w^6 & w^{10} & w^{14} \\
+w^3 & w^9 & w^{15} & w^{21} \\
+w^4 & w^{12} & w^{20} & w^{28} \\
+w^5 & w^{15} & w^{25} & w^{35} \\
+w^6 & w^{18} & w^{30} & w^{42} \\
+w^7 & w^{21} & w^{35} & w^{49}
+\end{pmatrix}
+\begin{pmatrix}
+f_1 \\ f_3 \\ f_5 \\ f_7
+\end{pmatrix}
+\\
+&=
+Z_8
+\begin{pmatrix}
+f_0 \\ f_2 \\ f_4 \\ f_6
+\end{pmatrix}
++A_8Z_8
+\begin{pmatrix}
+f_1 \\ f_3 \\ f_5 \\ f_7
+\end{pmatrix}
+\label{eq:AW}
+\\
+&\mathrm{where} \ 
+Z_8=
+\begin{pmatrix}
+w^0 & w^0 & w^0 & w^0 \\
+w^0 & w^2 & w^4 & w^6 \\
+w^0 & w^4 & w^8 & w^{12} \\
+w^0 & w^6 & w^{12} & w^{18} \\
+w^0 & w^8 & w^{16} & w^{24} \\
+w^0 & w^{10} & w^{20} & w^{30} \\
+w^0 & w^{12} & w^{24} & w^{36} \\
+w^0 & w^{14} & w^{28} & w^{42}
+\end{pmatrix}
+%,
+%A_8=
+%\begin{pmatrix}
+%w^0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+%0 & w^1 & 0 & 0 & 0 & 0 & 0 & 0 \\
+%0 & 0 & w^2 & 0 & 0 & 0 & 0 & 0 \\
+%0 & 0 & 0 & w^3 & 0 & 0 & 0 & 0 \\
+%0 & 0 & 0 & 0 & w^4 & 0 & 0 & 0 \\
+%0 & 0 & 0 & 0 & 0 & w^5 & 0 & 0 \\
+%0 & 0 & 0 & 0 & 0 & 0 & w^6 & 0 \\
+%0 & 0 & 0 & 0 & 0 & 0 & 0 & w^7
+%\end{pmatrix}
+\end{align}
+
+ここで$w^k=w^{8n+k}, (n=整数)$の周期性を利用すると
+
+\begin{align}
+Z_8 &=
+\begin{pmatrix}
+w^0 & w^0 & w^0 & w^0 \\
+w^0 & w^2 & w^4 & w^6 \\
+w^0 & w^4 & w^8 & w^{12} \\
+w^0 & w^6 & w^{12} & w^{18} \\
+w^0 & w^0 & w^0 & w^0 \\
+w^0 & w^2 & w^4 & w^6 \\
+w^0 & w^4 & w^8 & w^{12} \\
+w^0 & w^6 & w^{12} & w^{18}
+\end{pmatrix}
+\\
+&=
+\begin{pmatrix}
+W_4 \\
+W_4
+\end{pmatrix}
+\end{align}
+
+となる。これで\eqref{eq:AW}は
+
+\begin{equation}
+\begin{pmatrix}
+C_0 & C_1 & C_2 & C_3 & C_4 & C_5 & C_6 & C_7
+\end{pmatrix}
+\T
+=
+\begin{pmatrix}
+W_4 \\ W_4
+\end{pmatrix}
+\begin{pmatrix}
+f_0 \\ f_2 \\ f_4 \\ f_6
+\end{pmatrix}
++A_8
+\begin{pmatrix}
+W_4 \\ W_4
+\end{pmatrix}
+\begin{pmatrix}
+f_1 \\ f_3 \\ f_5 \\ f_7
+\end{pmatrix}
+\end{equation}
+
+となる。これを分解すると
+
+
+\begin{align}
+\begin{pmatrix}
+C_0 \\
+C_1 \\
+C_2 \\
+C_3
+\end{pmatrix}
+&=
+W_4
+\begin{pmatrix}
+f_0 \\ f_2 \\ f_4 \\ f_6
+\end{pmatrix}
++
+A_4W_4
+\begin{pmatrix}
+f_1 \\ f_3 \\ f_5 \\ f_7
+\end{pmatrix}
+\label{eq:fft8to4,1}
+\\
+\begin{pmatrix}
+C_4 \\
+C_5 \\
+C_6 \\
+C_7
+\end{pmatrix}
+&=
+W_4
+\begin{pmatrix}
+f_0 \\ f_2 \\ f_4 \\ f_6
+\end{pmatrix}
++
+w^4A_4W_4
+\begin{pmatrix}
+f_1 \\ f_3 \\ f_5 \\ f_7
+\end{pmatrix}
+\label{eq:fft8to4,2}
+\end{align}
+
+となって、2個の4サンプルFFTになる。
+
+%ここで、$W_4(f_0,f_2,f_4,f_6)\T$と$W_4(f_1,f_3,f_5,f_7)\T$は
+%2回ずつ出現しているので、一度計算した結果を覚えておけば掛け算の回数を減らせる。
+
+ここで、4サンプルFFTと同様に、共通の項を下記のように定義しておく。
+
+\begin{equation}
+\begin{pmatrix}
+a_0 \\ a_1 \\ a_2 \\ a_3
+\end{pmatrix}
+=
+W_4
+\begin{pmatrix}
+f_0 \\ f_2 \\ f_4 \\ f_6
+\end{pmatrix}
+,
+\begin{pmatrix}
+a_4 \\ a_5 \\ a_6 \\ a_7
+\end{pmatrix}
+=
+A_4
+W_4
+\begin{pmatrix}
+f_1 \\ f_3 \\ f_5 \\ f_7
+\end{pmatrix}
+\label{eq:fft8-a}
+\end{equation}
+
+\eqref{eq:fft8to4,1}, \eqref{eq:fft8to4,2}の4サンプルFFTをさらに分解すると次のようになる。
+
+\begin{align}
+\begin{pmatrix}
+C_0 \\
+C_1 \\
+\end{pmatrix}
+&=
+W_2
+\begin{pmatrix}
+f_0 \\ f_4
+\end{pmatrix}
++
+A_2W_2
+\begin{pmatrix}
+f_2 \\ f_6
+\end{pmatrix}
++
+A_2
+\left\{
+W_2
+\begin{pmatrix}
+f_1 \\ f_5
+\end{pmatrix}
++
+A_2W_2
+\begin{pmatrix}
+f_3 \\ f_7
+\end{pmatrix}
+\right\}
+\nonumber
+\\
+\begin{pmatrix}
+C_2 \\
+C_3
+\end{pmatrix}
+&=
+W_2
+\begin{pmatrix}
+f_0 \\ f_4
+\end{pmatrix}
++
+A_2W_2
+\begin{pmatrix}
+f_2 \\ f_6
+\end{pmatrix}
++
+w^2A_2
+\left\{
+W_2
+\begin{pmatrix}
+f_1 \\ f_5
+\end{pmatrix}
++
+A_2W_2
+\begin{pmatrix}
+f_3 \\ f_7
+\end{pmatrix}
+\right\}
+\nonumber
+\\
+\begin{pmatrix}
+C_4 \\
+C_5
+\end{pmatrix}
+&=
+W_2
+\begin{pmatrix}
+f_0 \\ f_4
+\end{pmatrix}
++
+A_2W_2
+\begin{pmatrix}
+f_2 \\ f_6
+\end{pmatrix}
++
+w^4A_2
+\left\{
+W_2
+\begin{pmatrix}
+f_1 \\ f_5
+\end{pmatrix}
++
+A_2W_2
+\begin{pmatrix}
+f_3 \\ f_7
+\end{pmatrix}
+\right\}
+\nonumber
+\\
+\begin{pmatrix}
+C_6 \\
+C_7
+\end{pmatrix}
+&=
+W_2
+\begin{pmatrix}
+f_0 \\ f_4
+\end{pmatrix}
++
+A_2W_2
+\begin{pmatrix}
+f_2 \\ f_6
+\end{pmatrix}
++
+w^6A_2
+\left\{
+W_2
+\begin{pmatrix}
+f_1 \\ f_5
+\end{pmatrix}
++
+A_2W_2
+\begin{pmatrix}
+f_3 \\ f_7
+\end{pmatrix}
+\right\}
+\label{eq:fft8-4rows}
+\end{align}
+
+ここでも、共通項を下記のように定義する。
+
+\begin{equation}
+\begin{pmatrix}
+b_0 \\ b_1
+\end{pmatrix}
+=
+W_2
+\begin{pmatrix}
+f_0 \\ f_4
+\end{pmatrix}
+,
+\begin{pmatrix}
+b_2 \\ b_3
+\end{pmatrix}
+=
+A_2
+W_2
+\begin{pmatrix}
+f_2 \\ f_6
+\end{pmatrix}
+,
+\begin{pmatrix}
+b_4 \\ b_5
+\end{pmatrix}
+=
+W_2
+\begin{pmatrix}
+f_1 \\ f_5
+\end{pmatrix}
+,
+\begin{pmatrix}
+b_6 \\ b_7
+\end{pmatrix}
+=
+A_2
+W_2
+\begin{pmatrix}
+f_3 \\ f_7
+\end{pmatrix}
+\end{equation}
+
+\eqref{eq:fft8-a}は4サンプルFFTの形をしているので、
+\eqref{eq:fft4-a}の答えから$a_i$が次のように計算できる。
+
+\begin{align}
+\begin{pmatrix}
+a_0 \\ a_1 \\ a_2 \\ a_3
+\end{pmatrix}
+=
+\begin{pmatrix}
+b_0+b_2 \\
+b_1+b_3 \\
+b_0-b_2 \\
+b_1-b_3
+\end{pmatrix}
+,
+\begin{pmatrix}
+a_4 \\ a_5 \\ a_6 \\ a_7
+\end{pmatrix}
+=
+A_4
+\begin{pmatrix}
+b_4+b_6 \\
+b_5+b_7 \\
+b_4-b_6 \\
+b_5-b_7
+\end{pmatrix}
+\end{align}
+
+あるいは下記の形にも表せる。
+
+\begin{align}
+\begin{pmatrix}
+a_0 \\ a_1
+\end{pmatrix}
+&=
+\begin{pmatrix}
+b_0 \\ b_1
+\end{pmatrix}
++
+\begin{pmatrix}
+b_2 \\ b_3
+\end{pmatrix}
+,&
+\begin{pmatrix}
+a_2 \\ a_3
+\end{pmatrix}
+&=
+\begin{pmatrix}
+b_0 \\ b_1
+\end{pmatrix}
+-
+\begin{pmatrix}
+b_2 \\ b_3
+\end{pmatrix}
+\\
+\begin{pmatrix}
+a_4 \\ a_5
+\end{pmatrix}
+&=
+A_2
+\left\{
+\begin{pmatrix}
+b_4 \\ b_6
+\end{pmatrix}
++
+\begin{pmatrix}
+b_5 \\ b_7
+\end{pmatrix}
+\right\}
+,&
+\begin{pmatrix}
+a_6 \\ a_7
+\end{pmatrix}
+&=
+w^2A_2
+\left\{
+\begin{pmatrix}
+b_4 \\ b_6
+\end{pmatrix}
+-
+\begin{pmatrix}
+b_5 \\ b_7
+\end{pmatrix}
+\right\}
+\end{align}
+
+\eqref{eq:fft8-4rows}を展開した形の答えを求めると、$W_2=\begin{pmatrix}1 & 1 \\ 1 & -1\end{pmatrix},
+A_2=\begin{pmatrix}1 & 0 \\ 0 & w\end{pmatrix}$であるから下記のようになる。
+
+\begin{align*}
+C_0 &= f_0+f_4+f_2+f_6+f_1+f_5+f_3+f_7 \\
+C_1 &= f_0-f_4+w(f_2-f_6)+w\{f_1-f_5+w(f_3-f_7)\} \\
+C_2 &= f_0+f_4+f_2+f_6+w^2\{f_1+f_5+f_3+f_7\} \\
+C_3 &= f_0-f_4+w(f_2-f_6)+w^3\{f_1-f_5+w(f_3+f_7)\} \\
+& \vdots
+\end{align*}
+
+しかし、ここでも展開した形からいきなり答えを求めるのは無駄が多い。
+まず$b_n$を求め、その値を元に$a_n$を求め、さらに$C_n$を求める
+のが効率的である。
+
+このときのバタフライ演算の様子を図\ref{but8}に
+示す。
+
+\newpage
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=25zw]{fft_butt8.ps}
+\caption{バタフライ演算による8サンプルFFT}
+\label{but8}
+\end{figure}
+
+
+\section{フーリエ変換の応用}
+
+\subsection{パワースペクトル}
+
+フーリエ変換の結果$F(\omega)$の絶対値の自乗をとったものを
+パワースペクトルという。
+これは自身の共役複素数との積として定義されることもあるが、
+意味は同じである。
+
+\begin{equation}
+P(\omega) = |F(\omega)|^2 = F^*(\omega)\ F(\omega)
+\end{equation}
+
+電圧・電流や音圧などの信号をそのエネルギーに比例するスケールに
+とったものと言える。
+
+尚、これは変換元の関数の自己相関関数(auto-correlation)を
+フーリエ変換したものと同じ関数である。
+自己相関関数は相互相関関数(cross-correlation)の定義
+
+\begin{equation}
+R_{fg}(\tau) = \langle f(t),g(t+\tau) \rangle
+ = \frac{1}{T}\int_0^T f(t) g(t+\tau) dt
+\end{equation}
+
+において、$R_{ff}= \langle f(t),f(t+\tau) \rangle$のことである。
+
+\subsection{クロススペクトル}
+
+二つの関数のフーリエ変換$F(\omega)$、$G(\omega)$について、
+クロススペクトルは次のように定義される。
+
+\begin{equation}
+P_c(\omega) = F^*(\omega)\ G(\omega)
+\end{equation}
+
+尚、これは変換元の関数の相互相関関数をフーリエ変換したものと
+同じ関数である。
+
+\begin{equation}
+\mathcal{F}[R_{fg}]= \mathcal{F}[\langle f(t),g(t+\tau) \rangle]
+= F^*(\omega)\ G(\omega)
+\end{equation}
+
+
+\subsection{位相スペクトル}
+
+フーリエ変換の複素平面上の位相を周波数の関数としてとったものを
+位相スペクトルという。
+
+\begin{equation}
+\Phi(\omega) = \arg(F(\omega)) = \tan^{-1}\frac{\Re [F]}{\Im [F]}
+\end{equation}
+
+
+\subsection{畳み込み関数}
+
+畳み込み関数、畳み込み積分、あるいはコンボリューションと呼ばれる
+演算は、二つの任意の関数$h(t)$、$x(t)$によって次のように定義されている。
+
+\begin{equation}
+y(t) = h * x = \int_0^\infty h(\tau) \cdot x(t-\tau) \  d\tau \label{convol}
+\end{equation}
+
+ここで、$h(t)$と$x(t)$のフーリエ変換$H(\omega)$、$X(\omega)$を使うと、
+畳み込み関数は単なる積で表せる。
+
+\begin{equation}
+y(t) = h * x = H \cdot X \label{fconvol}
+\end{equation}
+
+証明は略。
+
+\section{線形システム解析}
+
+線形システムとは、入力と出力の関係が線形の微分方程式で表されるような
+系のことである。実際の現象には非線形なシステムも数多いが、線形と
+みなして解析しうるシステムも数多い。このような系ではフーリエ変換を
+応用した解析が有効である。
+
+入力$x(t)$に対して出力$y(t)$が得られる線形システム$h$を考える。
+このとき、出力はある関数$h(t)$による畳み込み関数$y(t)=h*x$で表せる。
+ここに入力としてデルタ関数を入れると、\eqref{convol}から
+
+\begin{equation}
+y(t) = h * \delta = \int_0^\infty h(\tau) \cdot \delta(t-\tau) \  d\tau
+= h(t)
+\end{equation}
+
+となり、出力は関数$h(t)$そのものになる。デルタ関数に対する出力である
+ことから、$h(t)$をインパルス応答という(グリーン関数ともいう)。
+現実にはデルタ関数のように時間が無限小で強さが無限大のような信号は
+作り出せないので、ピークの高い短時間パルスで近似することになる。
+
+このことから分かるのは、インパルス応答がわかれば、一般の入力$x(t)$に
+対する出力が畳み込み積分によって予測できるということである。
+つまり、インパルス応答が系そのものを表しているといっていい。
+
+ここまでの議論は実空間の時間領域に関するものだったが、これを
+フーリエ変換した周波数領域で考えると、解析に有用な結果が得られる。
+まず、入力$x(t)$をフーリエ変換した結果$X(\omega)$と
+出力$y(t)$をフーリエ変換した結果$Y(\omega)$の間には、
+インパルス応答$h(t)$をフーリエ変換した結果$H(\omega)$を
+掛けただけという関係がある。
+
+\begin{equation}
+Y(\omega) = H \cdot X
+\end{equation}
+
+これは\eqref{fconvol}から導かれる結果である。このことから逆に、
+入力と出力のフーリエ変換からインパルス応答を求めることが
+できる。
+
+\begin{equation}
+h = \F^{-1}[H] = \F^{-1}[Y / X]
+\end{equation}
+
+また、$X(\omega)$のパワースペクトル$P_X(\omega)=X(\omega)\ X^*(\omega)$
+を入力として系に通すと、
+
+\begin{equation}
+H \cdot P_X =
+H \cdot X \cdot X^*=
+Y \cdot X^*=
+P_{XY}
+\end{equation}
+
+となり、クロススペクトルが求まる。このことから、時間領域では
+入力$x(t)$の自己相関関数$c_i(\tau)$を入力としたときの
+出力$h*c_i$が相互相関関数$c_{io}(\tau)=\langle x(t),y(t+\tau) \rangle$
+になっていることが類推できる。
+
+また、クロススペクトル$P_{XY}(\omega)$を更に系に通してやると、
+
+\begin{equation}
+H \cdot P_{XY}=
+H \cdot Y \cdot X^*=
+Y \cdot Y^*=
+P_Y
+\end{equation}
+
+となり、出力$Y(\omega)$のパワースペクトルが得られる。このことから、
+時間領域では入力と出力の相互相関関数$c_{io}(\tau)$をまたシステムに
+入力した出力$h*c_{io}$が出力の自己相関関数$c_o(\tau)=\langle y(t),y(t+\tau) \rangle$
+になっていることが類推できる。
+
+\end{document}
